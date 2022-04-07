@@ -1,0 +1,16 @@
+{
+    "width": 256,
+    "height": 256,
+    "x": 128,
+    "y": 128,
+    "step": 1024,
+    "seed": 1649416619955935000,
+    "sort": "hcl",
+    "diff": "rgb",
+    "fit": "min",
+    "select": "smallest",
+    "dist": "img",
+    "cpu": "cpu.profile",
+    "mem": "mem.profile",
+    "name": "creation-1649416619"
+}
