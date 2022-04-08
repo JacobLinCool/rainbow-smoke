@@ -1,0 +1,16 @@
+{
+    "width": 1280,
+    "height": 640,
+    "x": 854,
+    "y": 426,
+    "step": 1024,
+    "seed": 1649422284923450000,
+    "sort": "hcl",
+    "diff": "rgb",
+    "fit": "min",
+    "select": "smallest",
+    "dist": "img",
+    "cpu": "",
+    "mem": "",
+    "name": "creation-1649422284"
+}
