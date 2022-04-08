@@ -18,7 +18,7 @@ clean:
 	rm -f smoke *.profile
 
 setup:
-	go install golang.org/dl/$(GO)@latest
+	GO111MODULE=on go install golang.org/dl/$(GO)@latest
 	$(GO) download
 	GO111MODULE=off $(GO) get github.com/lucasb-eyer/go-colorful
 
