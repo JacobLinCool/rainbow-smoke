@@ -9,12 +9,6 @@ on:
         paths-ignore:
             - "**.md"
 
-    pull_request:
-        branches:
-            - "*"
-        paths-ignore:
-            - "**.md"
-
 jobs:
     build:
         strategy:
@@ -37,7 +31,7 @@ jobs:
               run: |
                   if [ "$RUNNER_OS" == "Windows" ]; then
                       mkdir bin
-                      mv smoke.exe bin/smoke-windows.exe
+                      mv smoke bin/smoke-windows.exe
                   elif [ "$RUNNER_OS" == "Linux" ]; then
                       mkdir bin
                       mv smoke bin/smoke-linux
