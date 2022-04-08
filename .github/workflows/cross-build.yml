@@ -38,7 +38,7 @@ jobs:
                   if [ "$RUNNER_OS" == "Windows" ]; then
                       mkdir bin
                       mv smoke.exe bin/smoke-windows.exe
-                  if [ "$RUNNER_OS" == "Linux" ]; then
+                  elif [ "$RUNNER_OS" == "Linux" ]; then
                       mkdir bin
                       mv smoke bin/smoke-linux
                   else
