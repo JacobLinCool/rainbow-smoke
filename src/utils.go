@@ -54,5 +54,5 @@ func max(a, b int) int {
 func mem_usage() {
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
-	fmt.Printf("Memory: %4v MB (GC Cycle: %3v)\n", mem.TotalAlloc>>20, mem.NumGC)
+	fmt.Printf("Memory: %4v MB (GC Cycle: %3v)\n", mem.Alloc>>20, mem.NumGC)
 }
