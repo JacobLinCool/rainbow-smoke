@@ -22,6 +22,14 @@ Or, you can use the following command to see the help message:
 
 ## Troubleshooting
 
+You need to install Go first.
+
+```sh
+GO111MODULE=off
+```
+
+Don't forget to disable Go module.
+
 > This repository is forked from [Ravenslofty/rbsmoke](https://github.com/Ravenslofty/rbsmoke).
 
 [gitpod-svg]: https://gitpod.io/button/open-in-gitpod.svg
