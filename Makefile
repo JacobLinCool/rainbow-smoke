@@ -7,7 +7,7 @@ fmt:
 	$(GO) fmt $(SOURCE_DIR)/*.go
 
 build:
-	$(GO) build -o smoke $(SOURCE_DIR)/*.go
+	GO111MODULE=off $(GO) build -o smoke $(SOURCE_DIR)/*.go
 
 run:
 	./smoke -cpu=cpu.profile -mem=mem.profile
@@ -20,6 +20,6 @@ clean:
 setup:
 	go install golang.org/dl/$(GO)@latest
 	$(GO) download
-	$(GO) get github.com/lucasb-eyer/go-colorful
+	GO111MODULE=off $(GO) get github.com/lucasb-eyer/go-colorful
 
 .PHONY: all fmt build run clean setup
