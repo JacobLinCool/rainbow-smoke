@@ -33,6 +33,7 @@ jobs:
               run: make setup && make build
 
             - name: Move compiled binary
+              shell: bash
               run: |
                   if [ "$RUNNER_OS" == "Windows" ]; then
                       mkdir bin
