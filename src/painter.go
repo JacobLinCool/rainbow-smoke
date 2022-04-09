@@ -3,55 +3,93 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"sync"
 	"time"
 )
 
+var GOROUTINE_EACH = 4096
+
 func painter(colors []color.NRGBA) {
 	img := make([]color.NRGBA, width*height)
-	branches := make([]Point, 0, width*height)
-	branch_map := make(map[int]bool, width*height)
-	painted_map := make(map[int]bool, width*height)
+	painted := make(map[int]bool, width*height)
+	nodes := make([]Node, 0, width*height)
+	existing_node := make(map[int]bool, width*height)
 	neighbour_list := init_neighbours()
 	fmt.Printf("Initialized. ")
 	mem_usage()
 
-	current := new_point(center_x, center_y)
+	current := new_node(center_x, center_y, len(neighbour_list[center_y*width+center_x]))
 
 	start_time := time.Now()
-	speed := 0
+	nodes_n := 0
 	for i := 0; i < width*height; i++ {
+		nodes_n += len(nodes)
 		if i%step == 0 {
-			speed = i / max(int(time.Since(start_time).Seconds()), 1)
+			duration := max(int(time.Since(start_time).Seconds()), 1)
 			fmt.Printf(
-				"%6.2f%%, branch: %5d, speed: %5d px/sec | ",
-				float64(100*i)/float64(width*height), len(branches), speed,
+				"%6.2f%%, node: %5d, speed: %5d px/sec (%8d) | ",
+				float64(100*i)/float64(width*height), len(nodes), i/duration, nodes_n/duration,
 			)
 			mem_usage()
-			go save_img(fmt.Sprintf("smoke-progress-%05d.png", i/step), img)
+
+			saved := make([]color.NRGBA, len(img))
+			for i := 0; i < len(img); i++ {
+				copy(saved[i:i+1], img[i:i+1])
+			}
+			go save_img(fmt.Sprintf("smoke-progress-%05d.png", i/step), saved)
 		}
 
-		if len(branches) != 0 {
-			idx := select_func(colors[i], branches, neighbour_list, img)
-			current = branches[idx]
+		if len(nodes) != 0 {
+			update(nodes, neighbour_list, colors[i], img)
 
-			branches[len(branches)-1], branches[idx] = branches[idx], branches[len(branches)-1]
-			branches = branches[:len(branches)-1]
-			delete(branch_map, current.Index)
+			index := select_func(&nodes)
+			current = nodes[index]
+
+			nodes[len(nodes)-1], nodes[index] = nodes[index], nodes[len(nodes)-1]
+			nodes = nodes[:len(nodes)-1]
+			delete(existing_node, current.Point.Index)
 		}
 
-		painted_map[current.Index] = true
+		img[current.Point.Index] = colors[i]
+		painted[current.Point.Index] = true
 
-		img[current.Index] = colors[i]
-
-		for _, neighbour := range neighbour_list[current.Index] {
-			if !branch_map[neighbour.Index] && !painted_map[neighbour.Index] {
-				branches = append(branches, neighbour)
-				branch_map[neighbour.Index] = true
+		for _, neighbour := range neighbour_list[current.Point.Index] {
+			if !existing_node[neighbour.Index] && !painted[neighbour.Index] {
+				nodes = append(nodes, new_node(neighbour.X, neighbour.Y, len(neighbour_list[neighbour.Index])))
+				existing_node[neighbour.Index] = true
 			}
 		}
 	}
 
-	save_img(fmt.Sprintf("rainbow-smoke-%dx%d.png", width, height), img)
+	save_img(creation_name+".png", img)
 	fmt.Printf("100.00%% Rendered in %.2f seconds\n", time.Since(start_time).Seconds())
 	mem_usage()
+}
+
+func update(nodes []Node, neighbour_list [][]Point, color color.NRGBA, img []color.NRGBA) {
+	if len(nodes) <= GOROUTINE_EACH {
+		for index := 0; index < len(nodes); index++ {
+			for neighbour_index, neighbour := range neighbour_list[nodes[index].Point.Index] {
+				nodes[index].Diffs[neighbour_index] = diff_func(color, img[neighbour.Index])
+			}
+			nodes[index].Fitness = fit_func(&nodes[index])
+		}
+	} else {
+		wg := new(sync.WaitGroup)
+
+		for i := 0; i < len(nodes); i += GOROUTINE_EACH {
+			wg.Add(1)
+			go func(i int) {
+				for index := i; index < min(i+GOROUTINE_EACH, len(nodes)); index++ {
+					for neighbour_index, neighbour := range neighbour_list[nodes[index].Point.Index] {
+						nodes[index].Diffs[neighbour_index] = diff_func(color, img[neighbour.Index])
+					}
+					nodes[index].Fitness = fit_func(&nodes[index])
+				}
+				wg.Done()
+			}(i)
+		}
+
+		wg.Wait()
+	}
 }

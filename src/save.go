@@ -43,8 +43,6 @@ func save_img(filename string, img []color.NRGBA) {
 }
 
 func save_config(filename string, config []byte) {
-	mutex_save.Lock()
-
 	if _, err := os.Stat(dist); os.IsNotExist(err) {
 		os.Mkdir(dist, DIR_PERMISSION)
 	}
@@ -64,6 +62,4 @@ func save_config(filename string, config []byte) {
 	if err != nil {
 		fmt.Println("Couldn't write config: ", err.Error())
 	}
-
-	mutex_save.Unlock()
 }

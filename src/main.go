@@ -37,8 +37,6 @@ var (
 )
 
 func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	var (
 		help           bool
 		_width         int
