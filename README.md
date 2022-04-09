@@ -2,7 +2,7 @@
 
 A command line utility for generating beautiful rainbow smoke images.
 
-![creation-1649422284](img/creation-1649422284/rainbow-smoke-1280x640.png)
+![creation-1649422284](img/creation-1649422284/creation-1649422284.png)
 
 [![Open in Gitpod][gitpod-svg]][gitpod-link]
 

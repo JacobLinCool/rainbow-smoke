@@ -1,10 +1,10 @@
 {
-    "width": 1280,
-    "height": 640,
-    "x": 854,
-    "y": 426,
+    "width": 256,
+    "height": 256,
+    "x": 128,
+    "y": 128,
     "step": 1024,
-    "seed": 1649422284923450000,
+    "seed": 1649508083969462000,
     "sort": "hcl",
     "diff": "rgb",
     "fit": "min",
@@ -12,5 +12,5 @@
     "dist": "img",
     "cpu": "test.profile",
     "mem": "",
-    "name": "creation-1649422284"
+    "name": "creation-1649508083"
 }
