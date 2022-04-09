@@ -7,17 +7,13 @@ import (
 
 func get_neighbours(point *Point) []Point {
 	neighbours := make([]Point, 0, 8)
+	dirs := [8][2]int{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}}
 
-	for x := -1; x <= 1; x++ {
-		for y := -1; y <= 1; y++ {
-			if x == 0 && y == 0 {
-				continue
-			}
+	for _, dir := range dirs {
+		neighbour := new_point(point.X+dir[0], point.Y+dir[1])
 
-			neighbour := new_point(point.X+x, point.Y+y)
-			if neighbour.X >= 0 && neighbour.X < width && neighbour.Y >= 0 && neighbour.Y < height {
-				neighbours = append(neighbours, neighbour)
-			}
+		if neighbour.X >= 0 && neighbour.X < width && neighbour.Y >= 0 && neighbour.Y < height {
+			neighbours = append(neighbours, neighbour)
 		}
 	}
 
