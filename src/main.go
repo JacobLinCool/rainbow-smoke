@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"time"
 )
@@ -22,18 +23,15 @@ var (
 	step          int   = -1
 	seed          int64 = math.MinInt64
 	sort_algo     string
-	diff_algo     string
-	fit_algo      string
-	select_algo   string
 	dist          string
 	cpu_profile   string
 	mem_profile   string
 	creation_name string
+	pipe_only     bool
+	json_progress bool
+	color_scale   float64
 	config_file   string
 	sort_func     SortFunc
-	diff_func     DiffFunc
-	fit_func      FitnessFunc
-	select_func   SelectFunc
 )
 
 func init() {
@@ -46,13 +44,13 @@ func init() {
 		_step          int
 		_seed          int64
 		_sort_algo     string
-		_diff_algo     string
-		_fit_algo      string
-		_select_algo   string
 		_dist          string
 		_cpu_profile   string
 		_mem_profile   string
 		_creation_name string
+		_pipe_only     bool
+		_json_progress bool
+		_color_scale   float64
 	)
 
 	flag.BoolVar(&help, "help", false, "Show this help")
@@ -64,13 +62,13 @@ func init() {
 	flag.IntVar(&_step, "step", -1, "Step for progress image")
 	flag.Int64Var(&_seed, "seed", math.MinInt64, "Seed for random number generator")
 	flag.StringVar(&_sort_algo, "sort", "hcl", "Sorting algorithm, can be: hcl, hsv, random, or none")
-	flag.StringVar(&_diff_algo, "diff", "rgb", "Difference algorithm, can be: rgb or lab")
-	flag.StringVar(&_fit_algo, "fit", "min", "Fitness algorithm, can be: min or sum")
-	flag.StringVar(&_select_algo, "select", "smallest", "Selection algorithm, can be: smallest or greatest")
 	flag.StringVar(&_dist, "dist", "img", "Output directory")
 	flag.StringVar(&_cpu_profile, "cpu", "", "Write CPU profile to the given file")
 	flag.StringVar(&_mem_profile, "mem", "", "Write memory profile to the given file")
 	flag.StringVar(&_creation_name, "name", "", "Name of the creation")
+	flag.BoolVar(&_pipe_only, "pipe", false, "Only pipe output to stdout")
+	flag.BoolVar(&_json_progress, "json", false, "Output progress as JSON")
+	flag.Float64Var(&_color_scale, "scale", 1.0, "Color scale")
 
 	flag.Parse()
 
@@ -105,15 +103,6 @@ func init() {
 	if _sort_algo != "" {
 		sort_algo = _sort_algo
 	}
-	if _diff_algo != "" {
-		diff_algo = _diff_algo
-	}
-	if _fit_algo != "" {
-		fit_algo = _fit_algo
-	}
-	if _select_algo != "" {
-		select_algo = _select_algo
-	}
 	if _dist != "" {
 		dist = _dist
 	}
@@ -125,6 +114,15 @@ func init() {
 	}
 	if _creation_name != "" {
 		creation_name = _creation_name
+	}
+	if _pipe_only {
+		pipe_only = _pipe_only
+	}
+	if _json_progress {
+		json_progress = _json_progress
+	}
+	if _color_scale != 1.0 {
+		color_scale = _color_scale
 	}
 
 	// #region Defaults
@@ -149,15 +147,6 @@ func init() {
 	if sort_algo == "" {
 		sort_algo = "hcl"
 	}
-	if diff_algo == "" {
-		diff_algo = "rgb"
-	}
-	if fit_algo == "" {
-		fit_algo = "min"
-	}
-	if select_algo == "" {
-		select_algo = "smallest"
-	}
 	if dist == "" {
 		dist = "img"
 	}
@@ -167,14 +156,18 @@ func init() {
 	// #endregion
 
 	rand.Seed(seed)
+	debug.SetGCPercent(200)
 }
 
 func main() {
 	color_size := int(math.Ceil(math.Cbrt(float64(width) * float64(height))))
-	fmt.Printf(
-		"Rendering a %dx%d image with %d colors\n",
-		width, height, color_size*color_size*color_size,
-	)
+
+	if !pipe_only && !json_progress {
+		fmt.Printf(
+			"Rendering a %dx%d image with %d colors\n",
+			width, height, color_size*color_size*color_size,
+		)
+	}
 
 	switch sort_algo {
 	case "hcl":
@@ -185,33 +178,6 @@ func main() {
 		sort_func = sort_random
 	default:
 		sort_func = sort_none
-	}
-
-	switch diff_algo {
-	case "rgb":
-		diff_func = diff_rgb
-	case "lab":
-		diff_func = diff_lab
-	default:
-		diff_func = diff_rgb
-	}
-
-	switch fit_algo {
-	case "min":
-		fit_func = fitness_min
-	case "sum":
-		fit_func = fitness_sum
-	default:
-		fit_func = fitness_min
-	}
-
-	switch select_algo {
-	case "smallest":
-		select_func = select_smallest
-	case "greatest":
-		select_func = select_greatest
-	default:
-		select_func = select_smallest
 	}
 
 	if cpu_profile != "" {
@@ -228,20 +194,18 @@ func main() {
 
 	config, err := json.MarshalIndent(
 		Config{
-			Width:  width,
-			Height: height,
-			X:      center_x,
-			Y:      center_y,
-			Step:   step,
-			Seed:   seed,
-			Sort:   sort_algo,
-			Diff:   diff_algo,
-			Fit:    fit_algo,
-			Select: select_algo,
-			Dist:   dist,
-			Cpu:    cpu_profile,
-			Mem:    mem_profile,
-			Name:   creation_name,
+			Width:      width,
+			Height:     height,
+			X:          center_x,
+			Y:          center_y,
+			Step:       step,
+			Seed:       seed,
+			Sort:       sort_algo,
+			Dist:       dist,
+			CpuProfile: cpu_profile,
+			MemProfile: mem_profile,
+			Name:       creation_name,
+			ColorScale: color_scale,
 		},
 		"",
 		"    ",
@@ -249,7 +213,11 @@ func main() {
 	if err != nil {
 		log.Fatal("Couldn't save config: ", err.Error())
 	}
-	save_config("config.json", config)
+	if !pipe_only {
+		save_config("config.json", config)
+	}
+
+	color_size = min(max(color_size, int(float64(color_size)*color_scale)), 16777216)
 
 	color_list := create_color_list(color_size)
 	sort_func(color_list)
@@ -288,11 +256,9 @@ func read_config() {
 	step = config.Step
 	seed = config.Seed
 	sort_algo = config.Sort
-	diff_algo = config.Diff
-	fit_algo = config.Fit
-	select_algo = config.Select
 	dist = config.Dist
-	cpu_profile = config.Cpu
-	mem_profile = config.Mem
+	cpu_profile = config.CpuProfile
+	mem_profile = config.MemProfile
 	creation_name = config.Name
+	color_scale = config.ColorScale
 }

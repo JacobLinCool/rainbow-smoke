@@ -1,36 +1,68 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"image"
 	"image/color"
-	"sync"
+	"image/png"
+	"os"
+	"runtime"
 	"time"
 )
 
-var GOROUTINE_EACH = 4096
+var (
+	GOROUTINE_EACH = 4096
+)
 
 func painter(colors []color.NRGBA) {
+	neighbours := init_neighbours(width, height)
+
 	img := make([]color.NRGBA, width*height)
-	painted := make(map[int]bool, width*height)
-	nodes := make([]Node, 0, width*height)
-	existing_node := make(map[int]bool, width*height)
-	neighbour_list := init_neighbours()
-	fmt.Printf("Initialized. ")
-	mem_usage()
+	candidates := make([]int, 0, width*height)
 
-	current := new_node(center_x, center_y, len(neighbour_list[center_y*width+center_x]))
-
-	start_time := time.Now()
-	nodes_n := 0
+	is_painted := make([]bool, width*height)
+	is_candidate := make([]bool, width*height)
 	for i := 0; i < width*height; i++ {
-		nodes_n += len(nodes)
-		if i%step == 0 {
-			duration := max(int(time.Since(start_time).Seconds()), 1)
-			fmt.Printf(
-				"%6.2f%%, node: %5d, speed: %5d px/sec (%8d) | ",
-				float64(100*i)/float64(width*height), len(nodes), i/duration, nodes_n/duration,
-			)
-			mem_usage()
+		is_painted[i] = false
+		is_candidate[i] = false
+	}
+
+	mem := mem_usage()
+	if !pipe_only && !json_progress {
+		fmt.Printf("Initialized. Memory: %d MB\n", mem.Alloc>>20)
+	}
+
+	current := center_y*width + center_x
+
+	start_time, candidates_n := time.Now(), 0
+	prev_time, prev_n := start_time, candidates_n
+	for i := 0; i < width*height; i++ {
+		candidates_n += len(candidates)
+		if !pipe_only && i%step == 0 {
+			duration := max(int(time.Since(start_time).Seconds()*1000), 1)
+			span := max(int(time.Since(prev_time).Seconds()*1000), 1)
+			mem := mem_usage()
+			info := ProgressInfo{
+				Done:   i,
+				Total:  width * height,
+				Time:   duration,
+				Node:   len(candidates),
+				Power:  int((candidates_n - prev_n) * 1000 / span),
+				Speed:  i * 1000 / duration,
+				Memory: mem.Alloc >> 20,
+				GC:     mem.NumGC,
+			}
+			if json_progress {
+				output, _ := json.Marshal(info)
+				fmt.Printf("%s\n", output)
+			} else {
+				fmt.Printf(
+					"%6.2f%%, node: %5d, speed: %5d px/sec (%9d) | Memory: %4d MB (GC: %3d)\n",
+					float64(info.Done)*100/float64(info.Total), info.Node, info.Speed, info.Power, info.Memory, info.GC,
+				)
+			}
+			prev_n, prev_time = candidates_n, time.Now()
 
 			saved := make([]color.NRGBA, len(img))
 			for i := 0; i < len(img); i++ {
@@ -39,57 +71,91 @@ func painter(colors []color.NRGBA) {
 			go save_img(fmt.Sprintf("smoke-progress-%05d.png", i/step), saved)
 		}
 
-		if len(nodes) != 0 {
-			update(nodes, neighbour_list, colors[i], img)
+		if len(candidates) != 0 {
+			index := select_best(candidates, neighbours, img, colors[i])
+			current = candidates[index]
 
-			index := select_func(&nodes)
-			current = nodes[index]
-
-			nodes[len(nodes)-1], nodes[index] = nodes[index], nodes[len(nodes)-1]
-			nodes = nodes[:len(nodes)-1]
-			delete(existing_node, current.Point.Index)
+			candidates[len(candidates)-1], candidates[index] = candidates[index], candidates[len(candidates)-1]
+			candidates = candidates[:len(candidates)-1]
+			is_candidate[current] = false
 		}
 
-		img[current.Point.Index] = colors[i]
-		painted[current.Point.Index] = true
+		img[current] = colors[i]
+		is_painted[current] = true
 
-		for _, neighbour := range neighbour_list[current.Point.Index] {
-			if !existing_node[neighbour.Index] && !painted[neighbour.Index] {
-				nodes = append(nodes, new_node(neighbour.X, neighbour.Y, len(neighbour_list[neighbour.Index])))
-				existing_node[neighbour.Index] = true
+		for _, neighbour := range neighbours[current] {
+			if !is_candidate[neighbour] && !is_painted[neighbour] {
+				candidates = append(candidates, neighbour)
+				is_candidate[neighbour] = true
 			}
 		}
 	}
 
-	save_img(creation_name+".png", img)
-	fmt.Printf("100.00%% Rendered in %.2f seconds\n", time.Since(start_time).Seconds())
-	mem_usage()
-}
-
-func update(nodes []Node, neighbour_list [][]Point, color color.NRGBA, img []color.NRGBA) {
-	if len(nodes) <= GOROUTINE_EACH {
-		for index := 0; index < len(nodes); index++ {
-			for neighbour_index, neighbour := range neighbour_list[nodes[index].Point.Index] {
-				nodes[index].Diffs[neighbour_index] = diff_func(color, img[neighbour.Index])
-			}
-			nodes[index].Fitness = fit_func(&nodes[index])
+	if !pipe_only {
+		save_img(creation_name+".png", img)
+		duration := max(int(time.Since(start_time).Seconds()*1000), 1)
+		span := max(int(time.Since(prev_time).Seconds()*1000), 1)
+		mem = mem_usage()
+		info := ProgressInfo{
+			Done:   width * height,
+			Total:  width * height,
+			Time:   duration,
+			Node:   len(candidates),
+			Power:  int((candidates_n - prev_n) * 1000 / span),
+			Speed:  width * height * 1000 / duration,
+			Memory: mem.Alloc >> 20,
+			GC:     mem.NumGC,
+		}
+		if json_progress {
+			output, _ := json.Marshal(info)
+			fmt.Printf("%s\n", output)
+		} else {
+			fmt.Printf(
+				"%6.2f%%, rendered in %.2f seconds.\n",
+				float64(info.Done)*100/float64(info.Total), float64(info.Time)/1000,
+			)
 		}
 	} else {
-		wg := new(sync.WaitGroup)
-
-		for i := 0; i < len(nodes); i += GOROUTINE_EACH {
-			wg.Add(1)
-			go func(i int) {
-				for index := i; index < min(i+GOROUTINE_EACH, len(nodes)); index++ {
-					for neighbour_index, neighbour := range neighbour_list[nodes[index].Point.Index] {
-						nodes[index].Diffs[neighbour_index] = diff_func(color, img[neighbour.Index])
-					}
-					nodes[index].Fitness = fit_func(&nodes[index])
-				}
-				wg.Done()
-			}(i)
+		painting := image.NewNRGBA(image.Rect(0, 0, width, height))
+		for index, color := range img {
+			painting.SetNRGBA(index%width, index/width, color)
 		}
 
-		wg.Wait()
+		err := png.Encode(os.Stdout, painting)
+		if err != nil {
+			panic(err)
+		}
 	}
+}
+
+// Use the race condition of goroutines to make randomize-effect
+func select_best(candidates []int, neighbours [][]int, img []color.NRGBA, color color.NRGBA) int {
+	subtasks := min((len(candidates)+GOROUTINE_EACH-1)/GOROUTINE_EACH, runtime.NumCPU())
+	channel := make(chan int, subtasks)
+
+	best_fitness, best_index := MAX_COLOR_SIZE, 0
+
+	for i := 0; i < subtasks; i++ {
+		go func(i int) {
+			for index := i; index < len(candidates); index += subtasks {
+				for idx := range neighbours[candidates[index]] {
+					fitness := diff_rgb(color, img[neighbours[candidates[index]][idx]])
+					// diff_func is so slow, but I don't know the reason
+					// fitness := diff_func(color, img[neighbours[candidates[index]][idx]])
+					if fitness < best_fitness {
+						best_fitness = fitness
+						best_index = index
+					}
+				}
+			}
+
+			channel <- i
+		}(i)
+	}
+
+	for i := 0; i < subtasks; i++ {
+		<-channel
+	}
+
+	return best_index
 }
