@@ -30,6 +30,7 @@ var (
 	pipe_only     bool
 	json_progress bool
 	color_scale   float64
+	stable        bool = false
 	config_file   string
 	sort_func     SortFunc
 )
@@ -51,6 +52,7 @@ func init() {
 		_pipe_only     bool
 		_json_progress bool
 		_color_scale   float64
+		_stable        bool
 	)
 
 	flag.BoolVar(&help, "help", false, "Show this help")
@@ -68,7 +70,8 @@ func init() {
 	flag.StringVar(&_creation_name, "name", "", "Name of the creation")
 	flag.BoolVar(&_pipe_only, "pipe", false, "Only pipe output to stdout")
 	flag.BoolVar(&_json_progress, "json", false, "Output progress as JSON")
-	flag.Float64Var(&_color_scale, "scale", 1.0, "Color scale")
+	flag.Float64Var(&_color_scale, "scale", 0.0, "Color scale")
+	flag.BoolVar(&_stable, "stable", false, "Make the output stable")
 
 	flag.Parse()
 
@@ -78,7 +81,9 @@ func init() {
 	}
 
 	if config_file != "" {
-		fmt.Printf("Reading configuration from %s\n", config_file)
+		if !_pipe_only {
+			fmt.Printf("Reading configuration from %s\n", config_file)
+		}
 		read_config()
 	}
 
@@ -121,8 +126,11 @@ func init() {
 	if _json_progress {
 		json_progress = _json_progress
 	}
-	if _color_scale != 1.0 {
+	if _color_scale != 0 {
 		color_scale = _color_scale
+	}
+	if _stable {
+		stable = _stable
 	}
 
 	// #region Defaults
@@ -161,11 +169,12 @@ func init() {
 
 func main() {
 	color_size := int(math.Ceil(math.Cbrt(float64(width) * float64(height))))
+	color_size = min(max(color_size, int(float64(color_size)*color_scale)), 255)
 
 	if !pipe_only && !json_progress {
 		fmt.Printf(
-			"Rendering a %dx%d image with %d colors\n",
-			width, height, color_size*color_size*color_size,
+			"Rendering a %dx%d image with %d colors. (using %d-core)\n",
+			width, height, color_size*color_size*color_size, runtime.NumCPU(),
 		)
 	}
 
@@ -206,6 +215,7 @@ func main() {
 			MemProfile: mem_profile,
 			Name:       creation_name,
 			ColorScale: color_scale,
+			Stable:     stable,
 		},
 		"",
 		"    ",
@@ -216,8 +226,6 @@ func main() {
 	if !pipe_only {
 		save_config("config.json", config)
 	}
-
-	color_size = min(max(color_size, int(float64(color_size)*color_scale)), 16777216)
 
 	color_list := create_color_list(color_size)
 	sort_func(color_list)
@@ -261,4 +269,5 @@ func read_config() {
 	mem_profile = config.MemProfile
 	creation_name = config.Name
 	color_scale = config.ColorScale
+	stable = config.Stable
 }

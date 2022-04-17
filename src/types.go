@@ -24,9 +24,8 @@ type Config struct {
 	CpuProfile string  `json:"cpu"`
 	MemProfile string  `json:"mem"`
 	Name       string  `json:"name"`
-	PipeOnly   bool    `json:"pipe_only"`
-	Json       bool    `json:"json"`
 	ColorScale float64 `json:"color_scale"`
+	Stable     bool    `json:"stable"`
 }
 
 type ProgressInfo struct {

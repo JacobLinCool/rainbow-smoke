@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"os"
 	"runtime"
 	"time"
@@ -18,6 +19,9 @@ var (
 func painter(colors []color.NRGBA) {
 	neighbours := init_neighbours(width, height)
 
+	// not used yet, use as penalty may reduce open nodes
+	// distances := make([]int, width*height)
+
 	img := make([]color.NRGBA, width*height)
 	candidates := make([]int, 0, width*height)
 
@@ -26,6 +30,7 @@ func painter(colors []color.NRGBA) {
 	for i := 0; i < width*height; i++ {
 		is_painted[i] = false
 		is_candidate[i] = false
+		// distances[i] = int(math.Pow(float64((i%width-center_x)*(i%width-center_x)+(i/width-center_y)*(i/width-center_y)), 0.3))
 	}
 
 	mem := mem_usage()
@@ -58,7 +63,7 @@ func painter(colors []color.NRGBA) {
 				fmt.Printf("%s\n", output)
 			} else {
 				fmt.Printf(
-					"%6.2f%%, node: %5d, speed: %5d px/sec (%9d) | Memory: %4d MB (GC: %3d)\n",
+					"%6.2f%%, node: %5d, speed: %6d px/sec (%9d) | Memory: %4d MB (GC: %3d)\n",
 					float64(info.Done)*100/float64(info.Total), info.Node, info.Speed, info.Power, info.Memory, info.GC,
 				)
 			}
@@ -128,15 +133,14 @@ func painter(colors []color.NRGBA) {
 	}
 }
 
-// Use the race condition of goroutines to make randomize-effect
 func select_best(candidates []int, neighbours [][]int, img []color.NRGBA, color color.NRGBA) int {
 	subtasks := min((len(candidates)+GOROUTINE_EACH-1)/GOROUTINE_EACH, runtime.NumCPU())
-	channel := make(chan int, subtasks)
-
-	best_fitness, best_index := MAX_COLOR_SIZE, 0
+	channel := make(chan []int, subtasks)
 
 	for i := 0; i < subtasks; i++ {
 		go func(i int) {
+			best_fitness, best_index := MAX_COLOR_SIZE, 0
+
 			for index := i; index < len(candidates); index += subtasks {
 				for idx := range neighbours[candidates[index]] {
 					// inline diff_rgb
@@ -155,12 +159,24 @@ func select_best(candidates []int, neighbours [][]int, img []color.NRGBA, color 
 				}
 			}
 
-			channel <- i
+			channel <- []int{best_index, best_fitness, i}
 		}(i)
 	}
 
+	best_fitness, best_index, best_i := MAX_COLOR_SIZE, 0, math.MaxInt
+
 	for i := 0; i < subtasks; i++ {
-		<-channel
+		result := <-channel
+
+		if result[1] > best_fitness {
+			continue
+		}
+
+		if result[1] == best_fitness && stable && result[2] > best_i {
+			continue
+		}
+
+		best_index, best_fitness, best_i = result[0], result[1], result[2]
 	}
 
 	return best_index
