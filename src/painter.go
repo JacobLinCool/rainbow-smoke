@@ -139,9 +139,15 @@ func select_best(candidates []int, neighbours [][]int, img []color.NRGBA, color 
 		go func(i int) {
 			for index := i; index < len(candidates); index += subtasks {
 				for idx := range neighbours[candidates[index]] {
-					fitness := diff_rgb(color, img[neighbours[candidates[index]][idx]])
-					// diff_func is so slow, but I don't know the reason
-					// fitness := diff_func(color, img[neighbours[candidates[index]][idx]])
+					// inline diff_rgb
+					// fitness := diff_rgb(color, img[neighbours[candidates[index]][idx]])
+
+					diff_r := int(color.R) - int(img[neighbours[candidates[index]][idx]].R)
+					diff_g := int(color.G) - int(img[neighbours[candidates[index]][idx]].G)
+					diff_b := int(color.B) - int(img[neighbours[candidates[index]][idx]].B)
+
+					fitness := diff_r*diff_r + diff_g*diff_g + diff_b*diff_b
+
 					if fitness < best_fitness {
 						best_fitness = fitness
 						best_index = index
