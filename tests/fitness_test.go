@@ -1,4 +1,4 @@
-package fitness_test
+package smoke_test
 
 import "testing"
 

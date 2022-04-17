@@ -1,11 +1,6 @@
-package range_test
+package smoke_test
 
 import "testing"
-
-var (
-	width  = 4096
-	height = 4096
-)
 
 func BenchmarkSelect(b *testing.B) {
 	nodes := make([]Node, 0, width*height)
@@ -55,22 +50,4 @@ func select_smallest_copy(nodes *[]Node) int {
 	}
 
 	return best_index
-}
-
-type Point struct {
-	X, Y, Index int
-}
-
-func new_point(x, y int) Point {
-	return Point{X: x, Y: y, Index: y*width + x}
-}
-
-type Node struct {
-	Point   Point
-	Fitness int
-	Diffs   []int
-}
-
-func new_node(x, y, diff_size int) Node {
-	return Node{Point: new_point(x, y), Fitness: 0, Diffs: make([]int, diff_size)}
 }
