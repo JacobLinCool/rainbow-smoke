@@ -1,0 +1,15 @@
+{
+    "width": 320,
+    "height": 320,
+    "x": 160,
+    "y": 160,
+    "step": 1024,
+    "seed": 1650203472725186000,
+    "sort": "hcl",
+    "dist": "img",
+    "cpu": "",
+    "mem": "",
+    "name": "benchmark-x",
+    "color_scale": 0,
+    "stable": true
+}
