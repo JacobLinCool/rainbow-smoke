@@ -1,0 +1,46 @@
+name: Check
+
+on:
+    pull_request:
+        paths-ignore:
+            - "**.md"
+
+jobs:
+    check:
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macos-latest, windows-latest]
+
+        runs-on: ${{ matrix.os }}
+        steps:
+            - uses: actions/checkout@v3
+
+            - uses: actions/setup-go@v3
+              with:
+                  go-version: ^1.18.0
+
+            - name: Compile
+              run: make setup && make build
+
+            - name: Run Smoke for 720p Image
+              shell: bash
+              run: |
+                  x = $RANDOM % 1280
+                  y = $RANDOM % 720
+                  mkdir ci-img
+                  if [ "$RUNNER_OS" == "Windows" ]; then
+                      ./smoke-windows.exe -width=1280 -height=720  -x=$x -y=$y -stable
+                  elif [ "$RUNNER_OS" == "Linux" ]; then
+                      ./smoke-linux -width=1280 -height=720  -x=$x -y=$y -stable
+                  else
+                      ./smoke-macos -width=1280 -height=720  -x=$x -y=$y -stable
+                  fi
+
+            - name: Push
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN  }}
+                  publish_dir: ./ci-img
+                  publish_branch: ci-img
+                  commit_message: CI Test Result (${{ matrix.os }}) [ci skip]
+                  keep_files: true
