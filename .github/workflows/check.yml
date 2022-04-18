@@ -26,7 +26,7 @@ jobs:
               shell: bash
               run: |
                   mkdir ci-img
-                  ./smoke -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
+                  ./smoke -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -dist=ci-img -stable
 
             - name: Push
               uses: peaceiris/actions-gh-pages@v3
