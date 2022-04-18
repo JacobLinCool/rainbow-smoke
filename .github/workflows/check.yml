@@ -26,13 +26,7 @@ jobs:
               shell: bash
               run: |
                   mkdir ci-img
-                  if [ "$RUNNER_OS" == "Windows" ]; then
-                      ./smoke-windows.exe -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
-                  elif [ "$RUNNER_OS" == "Linux" ]; then
-                      ./smoke-linux -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
-                  else
-                      ./smoke-macos -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
-                  fi
+                  ./smoke -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
 
             - name: Push
               uses: peaceiris/actions-gh-pages@v3
