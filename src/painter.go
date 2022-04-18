@@ -75,6 +75,7 @@ func painter(colors []color.NRGBA) {
 
 	start_time, candidates_n := time.Now(), 0
 	prev_time, prev_n := start_time, candidates_n
+	last_backup := start_time
 	for ; i < width*height; i++ {
 		candidates_n += len(candidates)
 		if !pipe_only && i%step == 0 {
@@ -109,7 +110,8 @@ func painter(colors []color.NRGBA) {
 			go save_img(fmt.Sprintf("smoke-progress-%05d.png", i/step), saved)
 		}
 
-		if resumable && i%(width*height/10) == 0 {
+		if resumable && time.Since(last_backup) > time.Minute {
+			last_backup = time.Now()
 			img_dump := make([]int, width*height)
 			for i := 0; i < width*height; i++ {
 				img_dump[i] = int(img[i].R)<<16 + int(img[i].G)<<8 + int(img[i].B)
