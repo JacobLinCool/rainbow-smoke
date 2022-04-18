@@ -38,3 +38,11 @@ type ProgressInfo struct {
 	Memory uint64 `json:"mem"`
 	GC     uint32 `json:"gc"`
 }
+
+type ResumableData struct {
+	I          int   `json:"i"`
+	Width      int   `json:"width"`
+	Height     int   `json:"height"`
+	Img        []int `json:"img"`
+	Candidates []int `json:"candidates"`
+}
