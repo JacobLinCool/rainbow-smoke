@@ -63,3 +63,25 @@ func save_config(filename string, config []byte) {
 		fmt.Println("Couldn't write config: ", err.Error())
 	}
 }
+
+func save_resumable(filename string, config []byte) {
+	if _, err := os.Stat(dist); os.IsNotExist(err) {
+		os.Mkdir(dist, DIR_PERMISSION)
+	}
+
+	if _, err := os.Stat(dist + "/" + creation_name); os.IsNotExist(err) {
+		os.Mkdir(dist+"/"+creation_name, DIR_PERMISSION)
+	}
+
+	file, err := os.Create(dist + "/" + creation_name + "/" + filename)
+	if err != nil {
+		fmt.Println("Couldn't open file for writing: ", err.Error())
+		return
+	}
+	defer file.Close()
+
+	_, err = file.Write(config)
+	if err != nil {
+		fmt.Println("Couldn't write config: ", err.Error())
+	}
+}

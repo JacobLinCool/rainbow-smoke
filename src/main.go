@@ -16,11 +16,11 @@ import (
 )
 
 var (
-	width         int   = -1
-	height        int   = -1
-	center_x      int   = -1
-	center_y      int   = -1
-	step          int   = -1
+	width               = -1
+	height              = -1
+	center_x            = -1
+	center_y            = -1
+	step                = -1
 	seed          int64 = math.MinInt64
 	sort_algo     string
 	dist          string
@@ -30,8 +30,9 @@ var (
 	pipe_only     bool
 	json_progress bool
 	color_scale   float64
-	stable        bool = false
-	config_file   string
+	stable        = false
+	resumable     = false
+	continue_file string
 	sort_func     SortFunc
 )
 
@@ -53,6 +54,8 @@ func init() {
 		_json_progress bool
 		_color_scale   float64
 		_stable        bool
+		_resumable     bool
+		config_file    string
 	)
 
 	flag.BoolVar(&help, "help", false, "Show this help")
@@ -72,6 +75,8 @@ func init() {
 	flag.BoolVar(&_json_progress, "json", false, "Output progress as JSON")
 	flag.Float64Var(&_color_scale, "scale", 0.0, "Color scale")
 	flag.BoolVar(&_stable, "stable", false, "Make the output stable")
+	flag.BoolVar(&_resumable, "resumable", false, "Save resumable state")
+	flag.StringVar(&continue_file, "continue", "", "Continue from the given resumable state")
 
 	flag.Parse()
 
@@ -84,7 +89,7 @@ func init() {
 		if !_pipe_only {
 			fmt.Printf("Reading configuration from %s\n", config_file)
 		}
-		read_config()
+		read_config(config_file)
 	}
 
 	if _width >= 2 {
@@ -131,6 +136,9 @@ func init() {
 	}
 	if _stable {
 		stable = _stable
+	}
+	if _resumable {
+		resumable = _resumable
 	}
 
 	// #region Defaults
@@ -245,7 +253,7 @@ func main() {
 	}
 }
 
-func read_config() {
+func read_config(config_file string) {
 	configBytes, err := ioutil.ReadFile(config_file)
 	if err != nil {
 		log.Fatal("Couldn't read config: ", err.Error())

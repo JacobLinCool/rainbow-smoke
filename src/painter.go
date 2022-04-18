@@ -6,6 +6,8 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"io/ioutil"
+	"log"
 	"math"
 	"os"
 	"runtime"
@@ -18,19 +20,50 @@ var (
 
 func painter(colors []color.NRGBA) {
 	neighbours := init_neighbours(width, height)
+	is_painted := make([]bool, width*height)
+	is_candidate := make([]bool, width*height)
+	img := make([]color.NRGBA, width*height)
+	candidates := make([]int, 0, width*height)
+	i := 0
 
 	// not used yet, use as penalty may reduce open nodes
 	// distances := make([]int, width*height)
 
-	img := make([]color.NRGBA, width*height)
-	candidates := make([]int, 0, width*height)
+	if continue_file != "" {
+		continueBytes, err := ioutil.ReadFile(continue_file)
+		if err != nil {
+			log.Fatal("Couldn't read continue file: ", err.Error())
+		}
 
-	is_painted := make([]bool, width*height)
-	is_candidate := make([]bool, width*height)
-	for i := 0; i < width*height; i++ {
-		is_painted[i] = false
-		is_candidate[i] = false
-		// distances[i] = int(math.Pow(float64((i%width-center_x)*(i%width-center_x)+(i/width-center_y)*(i/width-center_y)), 0.3))
+		var data ResumableData
+		err = json.Unmarshal(continueBytes, &data)
+		if err != nil {
+			log.Fatal("Couldn't parse resumable data: ", err.Error())
+		}
+
+		i = data.I
+		candidates = data.Candidates
+		for idx := 0; idx < len(candidates); idx++ {
+			is_candidate[candidates[idx]] = true
+		}
+		for idx := 0; idx < width*height; idx++ {
+			img[idx] = color.NRGBA{
+				R: uint8(data.Img[idx] >> 16),
+				G: uint8(data.Img[idx] >> 8),
+				B: uint8(data.Img[idx]),
+				A: 0,
+			}
+			if data.Img[idx] != 0 {
+				img[idx].A = 255
+				is_painted[idx] = true
+			}
+		}
+	} else {
+		for i := 0; i < width*height; i++ {
+			is_painted[i] = false
+			is_candidate[i] = false
+			// distances[i] = int(math.Pow(float64((i%width-center_x)*(i%width-center_x)+(i/width-center_y)*(i/width-center_y)), 0.3))
+		}
 	}
 
 	mem := mem_usage()
@@ -42,7 +75,7 @@ func painter(colors []color.NRGBA) {
 
 	start_time, candidates_n := time.Now(), 0
 	prev_time, prev_n := start_time, candidates_n
-	for i := 0; i < width*height; i++ {
+	for ; i < width*height; i++ {
 		candidates_n += len(candidates)
 		if !pipe_only && i%step == 0 {
 			duration := max(int(time.Since(start_time).Seconds()*1000), 1)
@@ -74,6 +107,21 @@ func painter(colors []color.NRGBA) {
 				copy(saved[i:i+1], img[i:i+1])
 			}
 			go save_img(fmt.Sprintf("smoke-progress-%05d.png", i/step), saved)
+		}
+
+		if resumable && i%(width*height/10) == 0 {
+			img_dump := make([]int, width*height)
+			for i := 0; i < width*height; i++ {
+				img_dump[i] = int(img[i].R)<<16 + int(img[i].G)<<8 + int(img[i].B)
+			}
+			data, _ := json.Marshal(ResumableData{
+				I:          i,
+				Width:      width,
+				Height:     height,
+				Img:        img_dump,
+				Candidates: candidates,
+			})
+			save_resumable("resumable.json", data)
 		}
 
 		if len(candidates) != 0 {
