@@ -1,0 +1,15 @@
+{
+    "width": 3024,
+    "height": 1964,
+    "x": 1512,
+    "y": 982,
+    "step": 1024,
+    "seed": 1650265628386154000,
+    "sort": "hcl",
+    "dist": "img",
+    "cpu": "",
+    "mem": "",
+    "name": "resumable-test",
+    "color_scale": 0,
+    "stable": true
+}
