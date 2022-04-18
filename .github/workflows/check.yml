@@ -36,3 +36,4 @@ jobs:
                   publish_branch: ci-img
                   commit_message: CI Test Result (${{ matrix.os }}) [ci skip]
                   keep_files: true
+                  exclude_assets: "**/smoke-progress-*.png"

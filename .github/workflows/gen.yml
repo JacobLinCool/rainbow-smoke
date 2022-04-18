@@ -30,3 +30,4 @@ jobs:
                   publish_branch: img-1080p
                   commit_message: 1080p Generate Test Result [ci skip]
                   keep_files: true
+                  exclude_assets: "**/smoke-progress-*.png"
