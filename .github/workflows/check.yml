@@ -25,15 +25,13 @@ jobs:
             - name: Run Smoke for 720p Image
               shell: bash
               run: |
-                  x = $RANDOM % 1280
-                  y = $RANDOM % 720
                   mkdir ci-img
                   if [ "$RUNNER_OS" == "Windows" ]; then
-                      ./smoke-windows.exe -width=1280 -height=720  -x=$x -y=$y -stable
+                      ./smoke-windows.exe -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
                   elif [ "$RUNNER_OS" == "Linux" ]; then
-                      ./smoke-linux -width=1280 -height=720  -x=$x -y=$y -stable
+                      ./smoke-linux -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
                   else
-                      ./smoke-macos -width=1280 -height=720  -x=$x -y=$y -stable
+                      ./smoke-macos -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -stable
                   fi
 
             - name: Push

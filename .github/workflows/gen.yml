@@ -19,10 +19,8 @@ jobs:
             - name: Run Smoke
               shell: bash
               run: |
-                  x = $RANDOM % 1920
-                  y = $RANDOM % 1080
                   mkdir img-1080p
-                  ./smoke-macos -width=1920 -height=1080  -x=$x -y=$y -stable
+                  ./smoke-macos -width=1920 -height=1080  -x=$(($RANDOM % 1920)) -y=$(($RANDOM % 1080)) -step=4096 -stable
 
             - name: Push
               uses: peaceiris/actions-gh-pages@v3
