@@ -20,7 +20,7 @@ jobs:
               shell: bash
               run: |
                   mkdir img-1080p
-                  ./smoke-macos -width=1920 -height=1080  -x=$(($RANDOM % 1920)) -y=$(($RANDOM % 1080)) -step=4096 -stable
+                  ./smoke -width=1920 -height=1080  -x=$(($RANDOM % 1920)) -y=$(($RANDOM % 1080)) -step=4096 -stable
 
             - name: Push
               uses: peaceiris/actions-gh-pages@v3
