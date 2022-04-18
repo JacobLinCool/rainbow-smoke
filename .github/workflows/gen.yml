@@ -1,0 +1,34 @@
+name: Generate
+
+on:
+    workflow_dispatch:
+
+jobs:
+    generate:
+        runs-on: macos-latest
+        steps:
+            - uses: actions/checkout@v3
+
+            - uses: actions/setup-go@v3
+              with:
+                  go-version: ^1.18.0
+
+            - name: Compile
+              run: make setup && make build
+
+            - name: Run Smoke
+              shell: bash
+              run: |
+                  x = $RANDOM % 1920
+                  y = $RANDOM % 1080
+                  mkdir img-1080p
+                  ./smoke-macos -width=1920 -height=1080  -x=$x -y=$y -stable
+
+            - name: Push
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN  }}
+                  publish_dir: ./img-1080p
+                  publish_branch: img-1080p
+                  commit_message: 1080p Generate Test Result [ci skip]
+                  keep_files: true
