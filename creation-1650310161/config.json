@@ -1,0 +1,15 @@
+{
+    "width": 1920,
+    "height": 1080,
+    "x": 1401,
+    "y": 970,
+    "step": 4096,
+    "seed": 1650310161119374069,
+    "sort": "hcl",
+    "dist": "img-1080p",
+    "cpu": "",
+    "mem": "",
+    "name": "creation-1650310161",
+    "color_scale": 0,
+    "stable": true
+}
