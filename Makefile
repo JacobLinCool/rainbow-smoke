@@ -1,5 +1,5 @@
 SOURCE_DIR = src
-GO = go1.18
+GO = go
 
 all: fmt clean build run
 
@@ -18,8 +18,8 @@ clean:
 	rm -f smoke *.profile
 
 setup:
-	GO111MODULE=on go install golang.org/dl/$(GO)@latest
-	$(GO) download
+	# GO111MODULE=on go install golang.org/dl/$(GO)@latest
+	# $(GO) download
 	GO111MODULE=off $(GO) get github.com/lucasb-eyer/go-colorful
 
 .PHONY: all fmt build run clean setup
