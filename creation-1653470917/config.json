@@ -1,0 +1,15 @@
+{
+    "width": 1280,
+    "height": 720,
+    "x": 1077,
+    "y": 411,
+    "step": 4096,
+    "seed": 1653470917018549660,
+    "sort": "hcl",
+    "dist": "ci-img",
+    "cpu": "",
+    "mem": "",
+    "name": "creation-1653470917",
+    "color_scale": 0,
+    "stable": true
+}
