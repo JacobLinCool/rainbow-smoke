@@ -1,36 +1,48 @@
 # Rainbow Smoke
 
-A command line utility for generating beautiful rainbow smoke images.
+Rainbow Smoke renders one deterministic image with the Exact Boundary-Color Octree algorithm. For a fixed seed, center, and image size, the raw pixels are reproducible across runs.
 
-![creation-1649422284](img/creation-1649422284/creation-1649422284.png)
+The renderer preserves the original boundary-growth semantics:
 
-[![Open in Gitpod][gitpod-svg]][gitpod-link]
+- the next pixel minimizes squared RGB distance to an active boundary edge;
+- unpainted neighbours participate as virtual black;
+- equal distances use the canonical frontier position and neighbour slot;
+- frontier removal uses deterministic swap-remove ordering.
 
-## Usage
+A fixed-depth dense RGB octree replaces the full-frontier search. A scalar implementation exists only in tests as a correctness oracle.
 
-```sh
-./smoke
-```
+## Build
 
-You can just run the command above, it will generate a 256x256 image with progress step of 1024.
-
-Or, you can use the following command to see the help message:
-
-```sh
-./smoke -help
-```
-
-## Troubleshooting
-
-You need to install Go first.
+Go 1.24 or newer is required.
 
 ```sh
-GO111MODULE=off
+make build
 ```
 
-Don't forget to disable Go module.
+## Render
 
-> This repository is forked from [Ravenslofty/rbsmoke](https://github.com/Ravenslofty/rbsmoke).
+```sh
+./smoke -width 256 -height 256 -seed 20260825 -output smoke.png
+```
 
-[gitpod-svg]: https://gitpod.io/button/open-in-gitpod.svg
-[gitpod-link]: https://gitpod.io/#https://github.com/JacobLinCool/rainbow-smoke
+The initial pixel defaults to the image center. Override it with `-x` and `-y`.
+
+## Benchmark
+
+Benchmark placement without PNG encoding:
+
+```sh
+make benchmark-1024
+```
+
+The JSON report separates palette generation, engine initialization, placement, and PNG encoding. The dense RGB index occupies 76,695,844 bytes (about 73.15 MiB) at every image size.
+
+## Verify
+
+```sh
+make test
+```
+
+The test suite checks octree nearest-neighbour results against a scalar RGB oracle and compares complete rendered pixel buffers against a scalar full-frontier renderer.
+
+This repository is forked from [Ravenslofty/rbsmoke](https://github.com/Ravenslofty/rbsmoke).

@@ -11,16 +11,16 @@ jobs:
 
             - uses: actions/setup-go@v3
               with:
-                  go-version: ^1.18.0
+                  go-version-file: go.mod
 
             - name: Compile
-              run: make setup && make build
+              run: make build
 
             - name: Run Smoke
               shell: bash
               run: |
                   mkdir img-1080p
-                  ./smoke -width=1920 -height=1080  -x=$(($RANDOM % 1920)) -y=$(($RANDOM % 1080)) -step=4096 -dist=img-1080p -stable
+                  ./smoke -width 1920 -height 1080 -x $(($RANDOM % 1920)) -y $(($RANDOM % 1080)) -seed $RANDOM -output img-1080p/smoke.png
 
             - name: Push
               uses: peaceiris/actions-gh-pages@v3
@@ -30,4 +30,3 @@ jobs:
                   publish_branch: img-1080p
                   commit_message: 1080p Generate Test Result [ci skip]
                   keep_files: true
-                  exclude_assets: "**/smoke-progress-*.png"

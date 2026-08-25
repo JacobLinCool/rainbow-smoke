@@ -1,25 +1,24 @@
-SOURCE_DIR = src
-GO = go
+GO ?= go
+BINARY ?= smoke
 
-all: fmt clean build run
+all: fmt test build
 
 fmt:
-	$(GO) fmt $(SOURCE_DIR)/*.go
+	$(GO) fmt ./...
+
+test:
+	$(GO) test ./...
 
 build:
-	GO111MODULE=off $(GO) build -o smoke $(SOURCE_DIR)/*.go
+	$(GO) build -trimpath -o $(BINARY) ./cmd/smoke
 
-run:
-	./smoke -cpu=cpu.profile -mem=mem.profile
-	@$(GO) tool pprof -text cpu.profile
-	@$(GO) tool pprof -text mem.profile
+run: build
+	./$(BINARY)
+
+benchmark-1024: build
+	./$(BINARY) -width 1024 -height 1024 -seed 20260825 -benchmark
 
 clean:
-	rm -f smoke *.profile
+	rm -f $(BINARY)
 
-setup:
-	# GO111MODULE=on go install golang.org/dl/$(GO)@latest
-	# $(GO) download
-	GO111MODULE=off $(GO) get github.com/lucasb-eyer/go-colorful
-
-.PHONY: all fmt build run clean setup
+.PHONY: all fmt test build run benchmark-1024 clean

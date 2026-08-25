@@ -17,23 +17,13 @@ jobs:
 
             - uses: actions/setup-go@v3
               with:
-                  go-version: ^1.18.0
+                  go-version-file: go.mod
+
+            - name: Test
+              run: make test
 
             - name: Compile
-              run: make setup && make build
+              run: make build
 
-            - name: Run Smoke for 720p Image
-              shell: bash
-              run: |
-                  mkdir ci-img
-                  ./smoke -width=1280 -height=720  -x=$(($RANDOM % 1280)) -y=$(($RANDOM % 720)) -step=4096 -dist=ci-img -stable
-
-            - name: Push
-              uses: peaceiris/actions-gh-pages@v3
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN  }}
-                  publish_dir: ./ci-img
-                  publish_branch: ci-img
-                  commit_message: CI Test Result (${{ matrix.os }}) [ci skip]
-                  keep_files: true
-                  exclude_assets: "**/smoke-progress-*.png"
+            - name: Exact smoke test
+              run: ./smoke -width 64 -height 64 -seed 1 -benchmark

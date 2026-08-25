@@ -1,7 +1,8 @@
 **/.DS_Store
 **/*.png
 **/*.mp4
-smoke
+/smoke
 *.profile
+*.shadow.md
 
 !img/creation-1649422284/creation-1649422284.png
